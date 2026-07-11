@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(\"D:/python123/pythonprojet/py.projet01/.venv/Scripts/python.exe\" -c \"import pymysql; conn = pymysql.connect\\(host='127.0.0.1', port=3306, user='root', password='1111', database='user_management', charset='utf8mb4'\\); print\\('MySQL 连接成功'\\); conn.close\\(\\)\")",
-      "Bash(python *)"
-    ]
-  }
-}
