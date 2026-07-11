@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>编辑用户</title>
+  <style>
+      * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+      }
+      body {
+          font-family: "Microsoft YaHei", "微软雅黑", sans-serif;
+          background: #f0f2f5;
+          padding: 20px;
+      }
+      .container {
+          max-width: 500px;
+          margin: 0 auto;
+          background: #fff;
+          padding: 30px;
+          border-radius: 8px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+      h1 {
+          color: #333;
+          margin-bottom: 20px;
+          border-bottom: 2px solid #52c41a;
+          padding-bottom: 10px;
+      }
+
+      /* ===== 表单样式（跟 create.html 一样） ===== */
+      .form-group {
+          margin-bottom: 16px;
+      }
+      .form-group label {
+          display: block;
+          margin-bottom: 6px;
+          color: #555;
+          font-weight: 600;
+      }
+      .form-group input {
+          width: 100%;
+          padding: 8px 12px;
+          border: 1px solid #d9d9d9;
+          border-radius: 4px;
+          font-size: 14px;
+      }
+      .form-group input:focus {
+          border-color: #1890ff;
+          outline: none;
+          box-shadow: 0 0 0 2px rgba(24,144,255,0.2);
+      }
+
+      /* ===== 按钮 ===== */
+      .btn-group {
+          margin-top: 20px;
+      }
+      .btn {
+          padding: 8px 20px;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 14px;
+          color: #fff;
+      }
+      .btn-submit {
+          background: #52c41a;
+      }
+      .btn-submit:hover {
+          background: #73d13d;
+      }
+      .btn-cancel {
+          background: #999;
+          margin-left: 10px;
+      }
+      .btn-cancel:hover {
+          background: #bbb;
+      }
+
+      /* ===== 消息提示 ===== */
+      .message {
+          padding: 10px;
+          margin-bottom: 15px;
+          border-radius: 4px;
+          display: none;
+      }
+      .message.error {
+          background: #fff2f0;
+          border: 1px solid #ffccc7;
+          color: #cf1322;
+      }
+  </style>
+</head>
+<body>
+  <div class="container">
+      <h1>✏️ 编辑用户</h1>
+
+      <!-- 错误消息 -->
+      <div id="message" class="message"></div>
+
+      <form id="editForm">
+          <!-- 姓名 -->
+          <div class="form-group">
+              <label>姓名</label>
+              <input type="text" id="name" placeholder="请输入姓名">
+          </div>
+
+          <!-- 邮箱 -->
+          <div class="form-group">
+              <label>邮箱</label>
+              <input type="email" id="email" placeholder="请输入邮箱">
+          </div>
+
+          <!-- 手机号 -->
+          <div class="form-group">
+              <label>手机号</label>
+              <input type="text" id="phone" placeholder="请输入手机号（选填）">
+          </div>
+
+          <div class="btn-group">
+              <button type="submit" class="btn btn-submit">保存修改</button>
+              <a href="/users" class="btn btn-cancel" style="text-decoration:none;">
+                  返回列表
+              </a>
+          </div>
+      </form>
+  </div>
+
+  <script>
+      // ============================================================
+      // 第1步：从 URL 里取出用户 ID
+      // ============================================================
+      // 当前页面 URL 格式是 /users/3/edit
+      // pathname = "/users/3/edit"
+      var pathParts = window.location.pathname.split('/');
+      //  ↑ pathname = URL 里域名后面的路径部分
+      //  ↑ .split('/') = 按 / 切割成数组
+      //  例如 "/users/3/edit" → ["", "users", "3", "edit"]
+      var userId = pathParts[2];
+      //  ↑ 取数组下标 2 的元素，就是 "3"
+
+      // ============================================================
+      // 第2步：页面加载时，先查出该用户的当前信息，填到表单里
+      // ============================================================
+      function loadUserData() {
+          fetch('/api/users/' + userId)  // GET /api/users/3
+              .then(function(response) {
+                  return response.json();
+              })
+              .then(function(result) {
+                  if (result.code === 200 && result.data) {
+                      // 把用户信息填到对应的输入框里
+                      // Selenium 测试时会先看输入框里有没有"预填的值"
+                      document.getElementById('name').value = result.data.name || '';
+                      document.getElementById('email').value = result.data.email || '';
+                      document.getElementById('phone').value = result.data.phone || '';
+                  } else {
+                      showMessage('用户不存在或已被删除！', 'error');
+                  }
+              })
+              .catch(function(error) {
+                  showMessage('加载用户信息失败：' + error.message, 'error');
+              });
+      }
+
+      // 页面加载时立即执行
+      loadUserData();
+
+      // ============================================================
+      // 第3步：监听表单提交，发 PUT 请求修改用户
+      // ============================================================
+      document.getElementById('editForm').addEventListener('submit', function(event) {
+          event.preventDefault();  // 阻止页面刷新
+
+          var msg = document.getElementById('message');
+          msg.style.display = 'none';
+
+          // 收集表单数据
+          var name = document.getElementById('name').value.trim();
+          var email = document.getElementById('email').value.trim();
+          var phone = document.getElementById('phone').value.trim() || null;
+
+          if (!name) {
+              showMessage('请输入姓名！', 'error');
+              return;
+          }
+          if (!email) {
+              showMessage('请输入邮箱！', 'error');
+              return;
+          }
+
+          // 发 PUT 请求
+          fetch('/api/users/' + userId, {
+              method: 'PUT',
+              headers: {
+                  'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                  name: name,
+                  email: email,
+                  phone: phone
+              })
+          })
+          .then(function(response) {
+              return response.json();
+          })
+          .then(function(result) {
+              if (result.code === 200) {
+                  alert('修改成功！');
+                  window.location.href = '/users';
+              } else {
+                  showMessage(result.message, 'error');
+              }
+          })
+          .catch(function(error) {
+              showMessage('请求失败：' + error.message, 'error');
+          });
+      });
+
+      function showMessage(text, type) {
+          var msg = document.getElementById('message');
+          msg.textContent = text;
+          msg.className = 'message ' + type;
+          msg.style.display = 'block';
+      }
+  </script>
+</body>
+</html>

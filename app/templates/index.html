@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>用户管理系统</title>
+  <style>
+      /* ===== 全局样式 ===== */
+      * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+      }
+      body {
+          font-family: "Microsoft YaHei", "微软雅黑", sans-serif;
+          background: #f0f2f5;
+          padding: 20px;
+      }
+      .container {
+          max-width: 900px;
+          margin: 0 auto;
+          background: #fff;
+          padding: 30px;
+          border-radius: 8px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      }
+      h1 {
+          color: #333;
+          margin-bottom: 20px;
+          border-bottom: 2px solid #1890ff;
+          padding-bottom: 10px;
+      }
+
+      /* ===== 顶部操作栏 ===== */
+      .toolbar {
+          margin-bottom: 20px;
+      }
+      .btn {
+          display: inline-block;
+          padding: 8px 16px;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 14px;
+          text-decoration: none;
+          color: #fff;
+      }
+      .btn-primary {
+          background: #1890ff;
+      }
+      .btn-primary:hover {
+          background: #40a9ff;
+      }
+      .btn-edit {
+          background: #52c41a;
+      }
+      .btn-edit:hover {
+          background: #73d13d;
+      }
+      .btn-delete {
+          background: #ff4d4f;
+      }
+      .btn-delete:hover {
+          background: #ff7875;
+      }
+
+      /* ===== 表格样式 ===== */
+      table {
+          width: 100%;
+          border-collapse: collapse;
+      }
+      th, td {
+          padding: 12px;
+          text-align: left;
+          border-bottom: 1px solid #e8e8e8;
+      }
+      th {
+          background: #fafafa;
+          color: #555;
+          font-weight: 600;
+      }
+      tr:hover {
+          background: #e6f7ff;
+      }
+
+      /* ===== 消息提示 ===== */
+      .message {
+          padding: 10px;
+          margin-bottom: 15px;
+          border-radius: 4px;
+          display: none;
+      }
+      .message.success {
+          background: #f6ffed;
+          border: 1px solid #b7eb8f;
+          color: #389e0d;
+      }
+      .message.error {
+          background: #fff2f0;
+          border: 1px solid #ffccc7;
+          color: #cf1322;
+      }
+
+      /* ===== 空状态 ===== */
+      .empty {
+          text-align: center;
+          color: #999;
+          padding: 40px;
+      }
+  </style>
+</head>
+<body>
+  <div class="container">
+      <h1>👥 用户管理系统</h1>
+
+      <!-- 消息提示区域：操作成功/失败后这里显示提示 -->
+      <div id="message" class="message"></div>
+
+      <!-- 顶部工具栏 -->
+      <div class="toolbar">
+          <a href="/users/create" class="btn btn-primary">＋ 新增用户</a>
+          <!--  ↑ /users/create 会跳转到新增页面 -->
+      </div>
+
+      <!-- 用户列表表格 -->
+      <table id="userTable">
+          <thead>
+              <tr>
+                  <th>ID</th>
+                  <th>姓名</th>
+                  <th>邮箱</th>
+                  <th>手机号</th>
+                  <th>创建时间</th>
+                  <th>操作</th>
+              </tr>
+          </thead>
+          <tbody id="userTableBody">
+              <!-- JavaScript 动态填充用户数据 -->
+          </tbody>
+      </table>
+
+      <!-- 空状态提示：没有用户时显示 -->
+      <div id="emptyHint" class="empty" style="display:none;">
+          暂无用户数据，点击"新增用户"开始添加
+      </div>
+  </div>
+
+  <script>
+      // ============================================================
+      // 页面加载时自动获取用户列表，填到表格里
+      // ============================================================
+
+      // 辅助函数：显示提示消息
+      function showMessage(text, type) {
+          // type = 'success'（绿色）或 'error'（红色）
+          var msg = document.getElementById('message');
+          msg.textContent = text;
+          msg.className = 'message ' + type;
+          msg.style.display = 'block';
+          // 3 秒后自动消失
+          setTimeout(function() {
+              msg.style.display = 'none';
+          }, 3000);
+      }
+
+      // 核心函数：从 API 获取用户列表，渲染到表格
+      function loadUsers() {
+          // fetch() 是浏览器内置的 HTTP 请求函数，相当于 requests.get()
+          fetch('/api/users')
+              .then(function(response) {
+                  // .then() = 等请求完成后执行
+                  // response.json() = 把响应体解析成 JavaScript 对象
+                  return response.json();
+              })
+              .then(function(result) {
+                  // result = {code: 200, message: "查询成功", data: [...]}
+                  var users = result.data;  // 用户数组
+                  var tbody = document.getElementById('userTableBody');
+                  var emptyHint = document.getElementById('emptyHint');
+
+                  // 情况1：没有用户 → 显示空状态提示
+                  if (users.length === 0) {
+                      tbody.innerHTML = '';
+                      //  ↑ innerHTML = 把 HTML 字符串塞进元素里
+                      emptyHint.style.display = 'block';
+                      //  ↑ 显示"暂无用户数据"
+                      return;  // 结束函数
+                  }
+
+                  // 情况2：有用户 → 隐藏空状态，拼表格行
+                  emptyHint.style.display = 'none';
+                  var html = '';
+                  for (var i = 0; i < users.length; i++) {
+                      var user = users[i];
+                      html += '<tr>';
+                      html += '<td>' + user.id + '</td>';
+                      html += '<td>' + user.name + '</td>';
+                      html += '<td>' + user.email + '</td>';
+                      // 手机号可能为空，没填时显示 "-"
+                      html += '<td>' + (user.phone || '-') + '</td>';
+                      //  ↑ || = "或"，如果 user.phone 是 null/空，就用 '-'
+                      html += '<td>' + user.created_at + '</td>';
+                      // 操作按钮：编辑和删除
+                      html += '<td>';
+                      html += '<a href="/users/' + user.id + '/edit" class="btn btn-edit">编辑</a> ';
+                      html += '<button class="btn btn-delete" onclick="deleteUser(' + user.id +
+')">删除</button>';
+                      //      ↑ onclick = 点击时调用 deleteUser 函数
+                      html += '</td>';
+                      html += '</tr>';
+                  }
+                  tbody.innerHTML = html;
+              })
+              .catch(function(error) {
+                  // .catch() = 请求失败时执行（网络断了、服务器没启动等）
+                  showMessage('加载用户列表失败：' + error.message, 'error');
+              });
+      }
+
+      // 删除用户函数
+      function deleteUser(userId) {
+          // 第1步：弹出确认框，防止误删
+          if (!confirm('确定要删除用户 ID=' + userId + ' 吗？此操作不可撤销！')) {
+              return;  // 用户点了"取消"，直接返回
+          }
+
+          // 第2步：发 DELETE 请求
+          fetch('/api/users/' + userId, {
+              method: 'DELETE'
+              //  ↑ method 指定 HTTP 方法，不写默认是 GET
+          })
+          .then(function(response) {
+              return response.json();
+          })
+          .then(function(result) {
+              if (result.code === 200) {
+                  showMessage('删除成功！', 'success');
+                  // 重新加载用户列表（被删的用户就会消失）
+                  loadUsers();
+              } else {
+                  showMessage('删除失败：' + result.message, 'error');
+              }
+          })
+          .catch(function(error) {
+              showMessage('删除请求失败：' + error.message, 'error');
+          });
+      }
+
+      // 页面加载完成后，立即执行 loadUsers()
+      // 这行代码是整个页面的"启动开关"
+      loadUsers();
+  </script>
+</body>
+</html>

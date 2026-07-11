@@ -1,0 +1,41 @@
+# ============================================================
+# .gitignore — 告诉 Git 哪些文件/目录不要提交
+# ============================================================
+# 规则很简单：写在这里的文件/目录，git status 看不到它们
+
+# ── Python 虚拟环境（体积大，每个机器自己建） ──
+.venv/
+.venv-linux/
+venv/
+
+# ── Python 缓存文件（自动生成的，没用） ──
+__pycache__/
+*.py[cod]          # .pyc / .pyo / .pyd 编译缓存
+*.egg-info/        # 安装包信息
+*.egg
+
+# ── 测试相关（每次跑都会重新生成） ──
+.pytest_cache/
+reports/
+
+# ── IDE 配置（每个人用不同的编辑器） ──
+.idea/
+.vscode/
+*.swp             # vim 临时文件
+*.swo
+
+# ── 日志文件 ──
+logs/
+*.log
+
+# ── 调试截图（临时调试用的，不用提交） ──
+debug_*.png
+
+# ── 系统文件 ──
+.DS_Store         # macOS 文件夹信息
+Thumbs.db         # Windows 缩略图缓存
+desktop.ini       # Windows 文件夹设置
+
+# ── 环境变量文件（如果以后用 .env 存密码，千万不要提交！） ──
+.env
+.env.local

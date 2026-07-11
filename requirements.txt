@@ -1,0 +1,8 @@
+  flask
+  pymysql
+  pyyaml
+  requests
+  pytest
+  pytest-html
+  selenium
+  webdriver-manager
